@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kyg.portfolio.dao.CommentDAO">
+	<insert id="insertComment">
+		insert into 
+			comment(co_mv_num, co_me_id, co_contents, co_ori_num)
+			<if test="comment.co_ori_num == 0">
+				select 
+					#{comment.co_mv_num}, 
+					#{comment.co_me_id},
+					#{comment.co_contents}, 
+					ifnull(max(co_num),0) + 1 
+				from comment
+			</if>
+			<if test="comment.co_ori_num != 0">
+				values( 
+					#{comment.co_mv_num}, 
+					#{comment.co_me_id},
+					#{comment.co_contents}, 
+					#{comment.co_ori_num}
+					)
+			</if>
+	</insert>
+	<select id="selectCommentList" resultType="kr.kyg.portfolio.vo.CommentVO">
+		select * from comment
+			where co_mv_num = #{co_mv_num} and co_del = 'N'
+			order by co_ori_num asc, co_num asc
+		limit #{cri.pageStart}, #{cri.perPageNum}
+	</select>
+	<select id="selectTotalCountComment" resultType="int">
+		select count(*) from comment
+		 where co_mv_num = #{co_mv_num} and co_del ='N'
+	</select>
+	<select id="selectComment" resultType="kr.kyg.portfolio.vo.CommentVO">
+		select * from comment
+			where co_num = #{co_num} and co_del = 'N'
+	</select>
+	<update id="deleteComment">
+		update comment set co_del = 'Y' where co_num = #{co_num}
+	</update>
+	<update id="updateComment">
+		update comment set
+		 	co_contents = #{comment.co_contents}
+		where co_num = #{comment.co_num}
+	</update>
+</mapper>

@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.kyg.portfolio.dao.MovieBoardDAO">
+	<insert id="insertMovieBoard" 
+	  useGeneratedKeys="true" 
+	  keyProperty="movieBoard.mv_num"
+	  parameterType="kr.kyg.portfolio.vo.MovieBoardVO">
+		  	insert into 
+		  		movieBoard(mv_name, mv_time, mv_age, mv_director, mv_outline, mv_reg_date,
+		  			mv_me_id, mv_del, mv_genre)
+		  		values( #{movieBoard.mv_name}, #{movieBoard.mv_time}, #{movieBoard.mv_age},
+		  		#{movieBoard.mv_director},
+		  		#{movieBoard.mv_outline}, #{movieBoard.mv_reg_date}, #{movieBoard.mv_me_id},'N', #{movieBoard.mv_genre})
+	</insert>
+  	<insert id="insertFile">
+	  	insert into file(fi_ori_name, fi_name, fi_mv_num, fi_type)
+	  		values(#{file.fi_ori_name}, #{file.fi_name}, #{file.fi_mv_num}, #{file.fi_type})
+	</insert>
+	<select id ="selectCountMovieBoard" resultType = "int">
+	  	select count(*) from movieboard where mv_del = 'N' and mv_name like concat('%',#{cri.search},'%')
+	</select>
+	<select id="getMovieBoardList" resultType="kr.kyg.portfolio.vo.MovieBoardVO">
+
+	  		
+	  	select mv.*, fi_name as mv_thumb from movieboard as mv
+			left join (select * from file where fi_type like 'Thumbnail' and fi_del is null) as file2
+    			on file2.fi_mv_num = mv.mv_num
+	  		where mv.mv_del = 'N' and mv_name like concat('%',#{cri.search},'%')
+            group by mv.mv_num
+	  		order by mv.mv_num desc
+	  		limit #{cri.pageStart}, #{cri.perPageNum}
+            
+	</select>
+	<select id="getMovieBoard" resultType="kr.kyg.portfolio.vo.MovieBoardVO">
+	  	select * from movieboard where mv_num = #{mv_num} and mv_del = 'N'
+	</select>
+	<select id = "selectFileList" resultType = "kr.kyg.portfolio.vo.FileVO">
+	  	select * from file where fi_mv_num = #{mv_num} and (fi_del !='Y' || fi_del is null) and fi_type is null
+	</select>
+	<update id = "deleteFile">
+	  	update file set
+	  		fi_del = 'Y',
+	  		fi_del_date = now()
+	  	where fi_num = #{fi_num} and fi_type is null
+  	</update>
+  	<update id="deleteMovieBoard">
+	  	update movieboard set
+	  		mv_del = 'Y',
+	  		mv_del_date = now()
+	  	where mv_num = #{mv_num} 
+	</update>
+	<update id="updateMovieBoard">
+	  	update movieboard set
+	  		mv_name = #{movieboard.mv_name},
+	  		mv_reg_date = #{movieboard.mv_reg_date},
+	  		mv_time = #{movieboard.mv_time},
+	  		mv_age = #{movieboard.mv_age},
+	  		mv_director = #{movieboard.mv_director},
+	  		mv_outline = #{movieboard.mv_outline},
+	  		mv_up_date = #{movieboard.mv_up_date}
+	  	where mv_num = #{movieboard.mv_num}
+	</update>
+	<select id="selectFile" resultType = "kr.kyg.portfolio.vo.FileVO">
+		select * from file where fi_mv_num = #{mv_num} and (fi_del !='Y' || fi_del is null) and fi_type = #{fi_type}
+	</select>
+	<select id="selectLikes" resultType="kr.kyg.portfolio.vo.LikesVO">
+  		select * from `like`
+  		where li_mv_num = #{likes.li_mv_num} and li_me_id = #{likes.li_me_id}
+	</select>
+	<insert id="insertLikes">
+	  	insert into `like`(li_mv_num, li_me_id, li_state)
+	  		values(#{likes.li_mv_num},#{likes.li_me_id},#{likes.li_state})
+	</insert>
+	<update id="updateBoardLikes">
+	  	update movieboard set
+	  		mv_up = (select count(*) from `like` where li_mv_num = #{likes.li_mv_num} and li_state = 1),
+	  		mv_down = (select count(*) from `like` where li_mv_num = #{likes.li_mv_num} and li_state = -1)
+	  	where mv_num = #{likes.li_mv_num}
+	</update>
+	<update id="updateLikes">
+	  	update `like` set li_state = #{likes.li_state}
+	  	where li_mv_num = #{likes.li_mv_num} and li_me_id = #{likes.li_me_id}
+	</update>
+	<select id="getLockerList" resultType="kr.kyg.portfolio.vo.MovieBoardVO">
+
+	  		
+	  	select mv.*, file2.fi_name as mv_thumb from movieboard as mv
+			left join (select * from file where fi_type like 'Thumbnail' and fi_del is null) as file2
+    			on file2.fi_mv_num = mv.mv_num
+    		left join `like` as li 
+    			on li.li_mv_num = mv.mv_num
+	  		where mv.mv_del = 'N' and mv.mv_name like concat('%',#{cri.search},'%')
+	  		and li.li_me_id = #{user.me_id}
+	  		and li.li_state = 1
+            group by mv.mv_num
+	  		order by mv.mv_num desc
+	  		limit #{cri.pageStart}, #{cri.perPageNum}
+            
+	</select>
+</mapper>
